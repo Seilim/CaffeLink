@@ -95,7 +95,6 @@ extern "C" DLLEXPORT int setInput(LIB_LINK_ARGS)
 {
     MTensor blobMT;
     double *data;
-    int i;
     
     if(Argc != 1){
         printf("ERR: %s takes 1 argument: Real tensor data, with size"

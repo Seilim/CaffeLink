@@ -154,7 +154,6 @@ bool getBlob(WolframLibraryData libData, MTensor *blobMT,
         bool (*getBl)(double**, int, int), bool (*getBlSize)(int**, int*, int))
 {
     int err, i, blobSize;
-    int *dims, dimSize;
     mint mtSize;
     double *data;
     double *dataD;

@@ -113,9 +113,9 @@ bool trainNet_(char *param, bool paramIsFile, int trainMode, char* path)
 extern "C" bool exportNet_(char* path)
 {
     if(useDoubles)
-        netsD.exportNet(path);
+        return netsD.exportNet(path);
     else
-        netsF.exportNet(path);
+        return netsF.exportNet(path);
 }
 
 extern "C" void printNetInfo_()

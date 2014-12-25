@@ -35,7 +35,6 @@ extern "C" bool doublesToFloats(double* in, float** out, long size)
 extern "C" DLLEXPORT int testLibLink(LIB_LINK_ARGS)
 {
     int err; // error code
-
     MTensor m1; // input tensor
     MTensor m2; // output tensor
 
@@ -50,6 +49,8 @@ extern "C" DLLEXPORT int testLibLink(LIB_LINK_ARGS)
     m1 = MArgument_getMTensor(Args[0]);
     dims = libData->MTensor_getDimensions(m1);
     err = libData->MTensor_new(MType_Real, 2, dims, &m2);
+    if(err)
+        return LIBRARY_MEMORY_ERROR;
     data1 = libData->MTensor_getRealData(m1);
     data2 = libData->MTensor_getRealData(m2);
 
@@ -64,14 +65,14 @@ extern "C" DLLEXPORT int testLibLink(LIB_LINK_ARGS)
 }
 
 extern "C" void cblasTest_()
-{
-    int i;
-
+{    
+#ifdef CBLAS_TEST
+    
     // check Atlas version, only if you build this with atlas (-latlas)
     //    void ATL_buildinfo(void);
     //    ATL_buildinfo();
 
-    printf("Testing cblast_gemm...\n");
+    printf("Testing cblast_sgemm...\n");
 
     const int M = 10;
     const int N = 8;
@@ -88,7 +89,10 @@ extern "C" void cblasTest_()
     delete B;
     delete C;
 
-    printf("Success, cblast_gemm is ok.\n");
+    printf("Success, cblast_sgemm is ok.\n");
+#else
+    printf("To test cblast_sgemm, rebuild caffeLink with CBLAS_TEST defined.\n");
+#endif
 }
 
 /** In case your kernel crushes in CPU mode, you can try calling this

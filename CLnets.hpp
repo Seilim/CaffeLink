@@ -27,18 +27,18 @@ public:
     {
         return net->layers().size();
     }
-    bool getTopBlobSize(int** dims, int* dimSize, int layerIdx);
-    bool getBottomBlobSize(int** dims, int* dimSize, int layerIdx);
-    bool getParamBlobSize(int** dims, int* dimSize, int layerIdx);
+    bool getTopBlobSize(int** dims, int* dimSize, unsigned int layerIdx);
+    bool getBottomBlobSize(int** dims, int* dimSize, unsigned int layerIdx);
+    bool getParamBlobSize(int** dims, int* dimSize, unsigned int layerIdx);
     bool getInputSize(int** dims, int* dimSize);
     
-    bool getTopBlob(Dtype** data, int layerIdx, int blobIdx);
-    bool getBottomBlob(Dtype** data, int layerIdx, int blobIdx);
-    bool getParamBlob(Dtype** data, int layerIdx, int blobIdx);
+    bool getTopBlob(Dtype** data, unsigned int layerIdx, unsigned int blobIdx);
+    bool getBottomBlob(Dtype** data, unsigned int layerIdx, unsigned int blobIdx);
+    bool getParamBlob(Dtype** data, unsigned int layerIdx, unsigned int blobIdx);
     
-    bool setTopBlob(Dtype** data, int layerIdx, int blobIdx);
-    bool setBottomBlob(Dtype** data, int layerIdx, int blobIdx);
-    bool setParamBlob(Dtype** data, int layerIdx, int blobIdx);    
+    bool setTopBlob(Dtype** data, unsigned int layerIdx, unsigned int blobIdx);
+    bool setBottomBlob(Dtype** data, unsigned int layerIdx, unsigned int blobIdx);
+    bool setParamBlob(Dtype** data, unsigned int layerIdx, unsigned int blobIdx);    
     bool setInput(Dtype **input);    
     
     

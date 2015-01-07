@@ -2,15 +2,18 @@
 
 BeginPackage["CaffeLink`"]
 
+newNet::usage = ""
+newSolver::usage = ""
+solverAddNetParam::usage = ""
 
-InitCaffeLinkModule::usage = "InitCaffeLink[path] initializes module from caffe.proto file."
-NewNet::usage = "NewNet[name] returns new net with given name."
-NewSolver::usage = "NewSolver[type] returns new solver of given type."
+initCaffeLinkModule::usage = "initCaffeLinkModule[path] initializes module from caffe.proto file."
+NewNetOld::usage = "NewNetOld[name] returns new net with given name."
+NewSolverOld::usage = "NewSolverOld[type] returns new solver of given type."
 AddLayer::usage = "AddLayer[net, type, name] appends new layer of giventype and name to the given net."
 SetNetParam::usage = "SetNetParam[net, name, value] sets parameter 'name' to 'value' in the given net."
 SetLayerParam::usage = "SetLayerParam[net, i, name, value] sets parameter 'name' to 'value' in layer 'i' in net, layer 'i' is ith added layer to the net."
 SetSolverParam::usage = "SetSolverParam[solver, name, value] sets parameter 'name' to 'value' in the given solver."
-GetNetParamString::usage = "GetNetParamString[net] generates protobuffer string from net compatible with Caffe."
+getParamString::usage = "getParamString[net] generates protobuffer string from net compatible with Caffe."
 
 
 cblasTest::usage = "Test cblas stability."
@@ -104,7 +107,12 @@ layerParTypeLUT = {
 (* -------------------------------------------------------------------------- *)
 
 
-InitCaffeLinkModule[caffeProtoPath_] := Module[{clProto, msgWithEnums, globalEnums},
+initCaffeLinkModule[caffeProto_] := Module[{clProto, msgWithEnums, globalEnums},
+caffeProtoPath = Replace["CaffeProtoPath",caffeProto];
+If[!FileExistsQ[caffeProtoPath],
+Throw[StringJoin["file not found: ", caffeProtoPath]];
+];
+
 clProto = CleanProto[caffeProtoPath];
 msgWithEnums = ParseEnumsInMsg[clProto];
 globalEnums = ParseGlobalEnums[clProto];
@@ -113,7 +121,30 @@ ParseParamList[globalEnums, msgWithEnums, clProto];
 (* -------------------------------------------------------------------------- *)
 
 
-NewNet[name_] := Module[{nn},
+newNet[netp_] := Module[{nn, netname, i, j, lap, lname, ltype},
+np = netp[[1;;-2]];
+netname = Replace["name",np];
+
+nn = NewNetOld[netname];
+For[i = 1, i <= Length[np], i++,
+nn = SetNetParam[nn, np[[i, 1]], np[[i, 2]]];
+];
+
+For[i = 1, i <= Length[netp[[-1]]], i++,
+lap = netp[[-1, i]];
+lname = Replace["name",lap];
+ltype = Replace["type",lap];
+nn = AddLayer[nn,ltype,lname];
+For[j = 1, j <= Length[lap], j++,
+nn = SetLayerParam[nn,i, lap[[j,1]],lap[[j,2]]];
+];
+];
+nn
+];
+(* -------------------------------------------------------------------------- *)
+
+
+NewNetOld[name_] := Module[{nn},
 nn = Select[paramLists, StringMatchQ[#[[1]], "NetParameter"] &][[1]];
 nn = SetOneParam[nn, "name", name];
 {nn, {}}
@@ -121,7 +152,27 @@ nn = SetOneParam[nn, "name", name];
 (* -------------------------------------------------------------------------- *)
 
 
-NewSolver[type_] := Module[{ns},
+newSolver[solp_] := Module[{type, i},
+type = Replace["solver_type",solp];
+
+sol = NewSolverOld[type];
+For[i = 1, i <= Length[solp], i++,
+sol = SetSolverParam[sol, solp[[i, 1]], solp[[i, 2]]];
+];
+sol
+];
+(* -------------------------------------------------------------------------- *)
+
+
+solverAddNetParam[a_, b_] := Module[{type, i},
+solver = Replace["solver", {a,b}];
+netp = Replace["net_param", {a,b}];
+
+StringJoin["net_param: {\n", netp, "}\n", solver]
+];
+
+
+NewSolverOld[type_] := Module[{ns},
 ns = Select[paramLists, StringMatchQ[#[[1]], "SolverParameter"] &][[1]];
 ns = SetOneParam[ns, "solver_type", type];
 {ns,{}}
@@ -250,7 +301,7 @@ list
 (* -------------------------------------------------------------------------- *)
 
 
-GetNetParamString[net_] := Module[{str, li},
+getParamString[net_] := Module[{str, li},
 
 (* start with net params *)
 str = GetParamStrRekur[net[[1]], ""];
@@ -482,7 +533,7 @@ GetLayerParTypeBased[] := layerParTypeBased;
 
 cblasTest=LibraryFunctionLoad["libcaffeLink", "cblasTest", {}, "Void"];
 
-initCaffeLink=LibraryFunctionLoad["libcaffeLink", "initCaffeLink", {"Boolean", "Boolean", Integer}, "Void"];
+initCaffeLinkLL=LibraryFunctionLoad["libcaffeLink", "initCaffeLink", {"Boolean", "Boolean", Integer}, "Void"];
 prepareNetFile = LibraryFunctionLoad["libcaffeLink", "prepareNetFile", {"UTF8String"}, "Void"];
 prepareNetString = LibraryFunctionLoad["libcaffeLink", "prepareNetString", {"UTF8String"}, "Void"];
 loadNet = LibraryFunctionLoad["libcaffeLink", "loadNet", {"UTF8String"}, "Void"];
@@ -513,6 +564,17 @@ setBottomBlob= LibraryFunctionLoad["libcaffeLink","setTopBlob",{{Real,1},Integer
 setParamBlob= LibraryFunctionLoad["libcaffeLink","setParamBlob",{{Real,1},Integer,Integer},"Void"];
 setInput= LibraryFunctionLoad["libcaffeLink","setInput",{{Real,1}},"Void"];
 (* -------------------------------------------------------------------------- *)
+
+
+initCaffeLink[a_, b_, c_] := Module[{useDouble, gpu, devid},
+useDouble = Replace["use double", {a, b, c}];
+gpu = Replace["GPU mode", {a, b, c}];
+devid = Replace["GPU device", {a, b, c}];
+Print[{useDouble, gpu, devid}];
+initCaffeLinkLL[useDouble, gpu, devid]
+];
+(* -------------------------------------------------------------------------- *)
+
 
 
 End[]

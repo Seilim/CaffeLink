@@ -18,7 +18,7 @@ getParamString::usage = "getParamString[net] generates protobuffer string from n
 
 cblasTest::usage = "Test cblas stability."
 
-initCaffeLink::usage = "initCaffeLink[useDouble, GPUmode, devID] initializes CaffeLink library with data type double or float, sets GPU or CPU mode and device ID for GPU mode."
+initCaffeLink::usage = "initCaffeLink[useDouble, useGpu, devID] initializes CaffeLink library with data type double or float, sets GPU or CPU mode and device ID for GPU mode."
 prepareNetFile::usage = "prepareNetFile[path] sets up a new net from protobuffer file on given path."
 prepareNetString::usage = "prepareNetString[string] sets up a new net from given protobuffer string."
 loadNet::usage = "loadNet[path] loads previously exported or snapshoted net after the same net was prepared using prepareNet*."
@@ -108,15 +108,15 @@ layerParTypeLUT = {
 
 
 initCaffeLinkModule[caffeProto_] := Module[{clProto, msgWithEnums, globalEnums},
-caffeProtoPath = Replace["CaffeProtoPath",caffeProto];
-If[!FileExistsQ[caffeProtoPath],
-Throw[StringJoin["file not found: ", caffeProtoPath]];
+If[!FileExistsQ[caffeProto],
+Throw[StringJoin["file not found: ", caffeProto]];
 ];
 
-clProto = CleanProto[caffeProtoPath];
+clProto = CleanProto[caffeProto];
 msgWithEnums = ParseEnumsInMsg[clProto];
 globalEnums = ParseGlobalEnums[clProto];
 ParseParamList[globalEnums, msgWithEnums, clProto];
+Return[True];
 ];
 (* -------------------------------------------------------------------------- *)
 
@@ -164,9 +164,11 @@ sol
 (* -------------------------------------------------------------------------- *)
 
 
-solverAddNetParam[a_, b_] := Module[{type, i},
-solver = Replace["solver", {a,b}];
-netp = Replace["net_param", {a,b}];
+solverAddNetParam[solver_, net_] := Module[{netp},
+netp = Replace["net_param", net];
+If[net[[1]] != "net_param",
+Throw[StringJoin["unknown parameter name: ", net[[1]]];];
+];
 
 StringJoin["net_param: {\n", netp, "}\n", solver]
 ];
@@ -566,12 +568,17 @@ setInput= LibraryFunctionLoad["libcaffeLink","setInput",{{Real,1}},"Void"];
 (* -------------------------------------------------------------------------- *)
 
 
-initCaffeLink[a_, b_, c_] := Module[{useDouble, gpu, devid},
-useDouble = Replace["use double", {a, b, c}];
-gpu = Replace["GPU mode", {a, b, c}];
-devid = Replace["GPU device", {a, b, c}];
-Print[{useDouble, gpu, devid}];
-initCaffeLinkLL[useDouble, gpu, devid]
+initCaffeLink[ra_, rb_, rc_:{"GPUDevice"->0}] := Module[{useDouble, useGpu, devid, res},
+args = Flatten[{ra, rb, rc}];
+useDouble = Replace["UseDouble", args];
+useGpu = Replace["UseGPU", args];
+devid = Replace["GPUDevice", args];
+
+res = initCaffeLinkLL[useDouble, useGpu, devid];
+If[res == Null, Return[True],
+Print[res];
+Return[False];
+];
 ];
 (* -------------------------------------------------------------------------- *)
 

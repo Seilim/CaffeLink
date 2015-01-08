@@ -165,12 +165,8 @@ sol
 
 
 solverAddNetParam[solver_, net_] := Module[{netp},
-netp = Replace["net_param", net];
-If[net[[1]] != "net_param",
-Throw[StringJoin["unknown parameter name: ", net[[1]]];];
-];
 
-StringJoin["net_param: {\n", netp, "}\n", solver]
+StringJoin["net_param: {\n", net, "}\n", solver]
 ];
 
 

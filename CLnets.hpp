@@ -27,6 +27,8 @@ public:
     {
         return net->layers().size();
     }
+    int getLayerIdx(char* name);
+    
     bool getTopBlobSize(int** dims, int* dimSize, unsigned int layerIdx);
     bool getBottomBlobSize(int** dims, int* dimSize, unsigned int layerIdx);
     bool getParamBlobSize(int** dims, int* dimSize, unsigned int layerIdx);

@@ -92,6 +92,13 @@ void printNetInfo_();
  */
 int getLayerNum_();
 
+/**
+ * Returns index of layer with given name.
+ * @param name layer name
+ * @return 
+ */
+int getLayerIdx_(char* name);
+
 /** 
  * Calculates blob size using given function and stores it to given pointer. 
  * Returns false on failure

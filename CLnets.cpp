@@ -173,6 +173,24 @@ void CLnets<Dtype>::printNetInfo()
 }
 
 template <typename Dtype>
+int CLnets<Dtype>::getLayerIdx(char* name)
+{
+    long unsigned int li;
+    long unsigned int layerNum = net->layers().size();
+    std::string otherName;   
+    
+    for (li = 0; li < layerNum; li++) {
+        otherName = net->layer_names()[li];
+        
+        if(strcmp(name, otherName.c_str()) == 0)
+            return li;
+    }
+    
+    printf("ERR in %s: Wrong layer name\n", __FUNCTION__);
+    return -1;
+}
+
+template <typename Dtype>
 bool CLnets<Dtype>::getLayBlobSize(int** dims, int* dimSize,
         std::vector<caffe::Blob<Dtype>*> blobs)
 {

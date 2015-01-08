@@ -261,3 +261,91 @@ extern "C" DLLEXPORT int getParamBlob(LIB_LINK_ARGS)
     MArgument_setMTensor(Res, blobMT);
     return LIBRARY_NO_ERROR;   
 }
+
+
+/** Mathematica librarylink wrapper for \c getTopBlob_ called by layer name.*/
+extern "C" DLLEXPORT int getTopBlobLName(LIB_LINK_ARGS)
+{
+    MTensor blobMT;
+    char* name;
+    int layerIdx;
+    int blobIdx;
+    
+    if(Argc != 2){
+        printf("ERR: %s takes 2 arguments: UTF8String layer name "
+                "and Integer blob index\n",
+                __FUNCTION__);
+        libData->Message(MSG_WRONG_ARGS);
+        return LIBRARY_FUNCTION_ERROR;
+    }
+
+    name = MArgument_getUTF8String(Args[0]);
+    layerIdx = getLayerIdx_(name);
+    if(layerIdx == -1)
+        return LIBRARY_FUNCTION_ERROR;
+    
+    blobIdx = MArgument_getInteger(Args[1]);
+    if (!getBlob(libData, &blobMT, layerIdx, blobIdx, &getTopBlob_, &getTopBlobSize_))
+        return LIBRARY_FUNCTION_ERROR;
+    
+    MArgument_setMTensor(Res, blobMT);
+    return LIBRARY_NO_ERROR;   
+}
+
+/** Mathematica librarylink wrapper for \c getBottomBlob_ called by layer name.*/
+extern "C" DLLEXPORT int getBottomBlobLName(LIB_LINK_ARGS)
+{
+    MTensor blobMT;
+    char* name;
+    int layerIdx;
+    int blobIdx;
+    
+    if(Argc != 2){
+        printf("ERR: %s takes 2 arguments: UTF8String layer name "
+                "and Integer blob index\n",
+                __FUNCTION__);
+        libData->Message(MSG_WRONG_ARGS);
+        return LIBRARY_FUNCTION_ERROR;
+    }
+
+    name = MArgument_getUTF8String(Args[0]);
+    layerIdx = getLayerIdx_(name);
+    if(layerIdx == -1)
+        return LIBRARY_FUNCTION_ERROR;
+    
+    blobIdx = MArgument_getInteger(Args[1]);
+    if (!getBlob(libData, &blobMT, layerIdx, blobIdx, &getBottomBlob_, &getBottomBlobSize_))
+        return LIBRARY_FUNCTION_ERROR;
+    
+    MArgument_setMTensor(Res, blobMT);
+    return LIBRARY_NO_ERROR;   
+}
+
+/** Mathematica librarylink wrapper for \c getParamBlob_ called by layer name.*/
+extern "C" DLLEXPORT int getParamBlobLName(LIB_LINK_ARGS)
+{
+    MTensor blobMT;
+    char* name;
+    int layerIdx;
+    int blobIdx;
+    
+    if(Argc != 2){
+        printf("ERR: %s takes 2 arguments: UTF8String layer name "
+                "and Integer blob index\n",
+                __FUNCTION__);
+        libData->Message(MSG_WRONG_ARGS);
+        return LIBRARY_FUNCTION_ERROR;
+    }
+
+    name = MArgument_getUTF8String(Args[0]);
+    layerIdx = getLayerIdx_(name);
+    if(layerIdx == -1)
+        return LIBRARY_FUNCTION_ERROR;
+    
+    blobIdx = MArgument_getInteger(Args[1]);
+    if (!getBlob(libData, &blobMT, layerIdx, blobIdx, &getParamBlob_, &getParamBlobSize_))
+        return LIBRARY_FUNCTION_ERROR;
+    
+    MArgument_setMTensor(Res, blobMT);
+    return LIBRARY_NO_ERROR;   
+}

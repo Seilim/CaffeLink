@@ -154,6 +154,14 @@ extern "C" int getLayerNum_()
         return netsF.getLayerNum();
 }
 
+extern "C" int getLayerIdx_(char* name)
+{
+    if (useDoubles)
+        return netsD.getLayerIdx(name);
+    else
+        return netsF.getLayerIdx(name);
+}
+
 extern "C" bool getBlobSize_(int *blobSize, bool (*getBlSize)(int**, int*, int),
         int layerIdx, int blobIdx)
 {

@@ -149,6 +149,86 @@ extern "C" DLLEXPORT int getParamBlobSize(LIB_LINK_ARGS)
     return LIBRARY_NO_ERROR;   
 }
 
+/** Mathematica librarylink wrapper for \c getTopBlobSize_ called by layer name.*/
+extern "C" DLLEXPORT int getTopBlobSizeLName(LIB_LINK_ARGS)
+{
+    MTensor dimsMT;
+    char* name;
+    int layerIdx;
+    
+    if(Argc != 1){
+        printf("ERR: %s takes 1 arguments: UTF8String layer name\n",
+                __FUNCTION__);
+        libData->Message(MSG_WRONG_ARGS);
+        return LIBRARY_FUNCTION_ERROR;
+    }
+
+    name = MArgument_getUTF8String(Args[0]);
+    layerIdx = getLayerIdx_(name);
+    if(layerIdx == -1)
+        return LIBRARY_FUNCTION_ERROR;
+    
+    if (!getBlobSize(libData, &dimsMT, layerIdx, &getTopBlobSize_))
+        return LIBRARY_FUNCTION_ERROR;
+    
+    MArgument_setMTensor(Res, dimsMT);
+    return LIBRARY_NO_ERROR;   
+}
+
+/** Mathematica librarylink wrapper for \c getBottomBlobSize_ called by layer name.*/
+extern "C" DLLEXPORT int getBottomBlobSizeLName(LIB_LINK_ARGS)
+{
+    MTensor dimsMT;
+    char* name;
+    int layerIdx;
+    
+    if(Argc != 1){
+        printf("ERR: %s takes 1 arguments: UTF8String layer name\n",
+                __FUNCTION__);
+        libData->Message(MSG_WRONG_ARGS);
+        return LIBRARY_FUNCTION_ERROR;
+    }
+
+    name = MArgument_getUTF8String(Args[0]);
+    layerIdx = getLayerIdx_(name);
+    if(layerIdx == -1)
+        return LIBRARY_FUNCTION_ERROR;
+    
+    if (!getBlobSize(libData, &dimsMT, layerIdx, &getBottomBlobSize_))
+        return LIBRARY_FUNCTION_ERROR;
+    
+    MArgument_setMTensor(Res, dimsMT);
+    return LIBRARY_NO_ERROR;   
+}
+
+/** Mathematica librarylink wrapper for \c getParamBlobSize_ called by layer name.*/
+extern "C" DLLEXPORT int getParamBlobSizeLName(LIB_LINK_ARGS)
+{
+    MTensor dimsMT;
+    char* name;
+    int layerIdx;
+    
+    if(Argc != 1){
+        printf("ERR: %s takes 1 arguments: UTF8String layer name\n",
+                __FUNCTION__);
+        libData->Message(MSG_WRONG_ARGS);
+        return LIBRARY_FUNCTION_ERROR;
+    }
+
+    name = MArgument_getUTF8String(Args[0]);
+    layerIdx = getLayerIdx_(name);
+    if(layerIdx == -1)
+        return LIBRARY_FUNCTION_ERROR;
+    
+    if (!getBlobSize(libData, &dimsMT, layerIdx, &getParamBlobSize_))
+        return LIBRARY_FUNCTION_ERROR;
+    
+    MArgument_setMTensor(Res, dimsMT);
+    return LIBRARY_NO_ERROR;   
+}
+
+
+
 bool getBlob(WolframLibraryData libData, MTensor *blobMT,
         int layerIdx, int blobIdx,
         bool (*getBl)(double**, int, int), bool (*getBlSize)(int**, int*, int))

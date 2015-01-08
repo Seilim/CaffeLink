@@ -553,18 +553,28 @@ printNetInfo = LibraryFunctionLoad["libcaffeLink","printNetInfo",{},"Void"];
 printWorkingPath = LibraryFunctionLoad["libcaffeLink","printWorkingPath",{},"Void"];
 
 getLayerNum = LibraryFunctionLoad["libcaffeLink","getLayerNum",{},Integer];
-getTopBlobSize = LibraryFunctionLoad["libcaffeLink","getTopBlobSize",{Integer},{Integer,1}];
-getBottomBlobSize = LibraryFunctionLoad["libcaffeLink","getBottomBlobSize",{Integer},{Integer,1}];
-getParamBlobSize = LibraryFunctionLoad["libcaffeLink","getParamBlobSize",{Integer},{Integer,1}];
+getTopBlobSizeLL = LibraryFunctionLoad["libcaffeLink","getTopBlobSize",{Integer},{Integer,1}];
+getBottomBlobSizeLL = LibraryFunctionLoad["libcaffeLink","getBottomBlobSize",{Integer},{Integer,1}];
+getParamBlobSizeLL = LibraryFunctionLoad["libcaffeLink","getParamBlobSize",{Integer},{Integer,1}];
+getTopBlobSizeLNameLL = LibraryFunctionLoad["libcaffeLink","getTopBlobSizeLName",{"UTF8String"},{Integer,1}];
+getBottomBlobSizeLNameLL = LibraryFunctionLoad["libcaffeLink","getBottomBlobSizeLName",{"UTF8String"},{Integer,1}];
+getParamBlobSizeLNameLL = LibraryFunctionLoad["libcaffeLink","getParamBlobSizeLName",{"UTF8String"},{Integer,1}];
 
-getTopBlob= LibraryFunctionLoad["libcaffeLink","getTopBlob",{Integer,Integer},{Real,1}];
-getBottomBlob= LibraryFunctionLoad["libcaffeLink","getBottomBlob",{Integer,Integer},{Real,1}];
-getParamBlob= LibraryFunctionLoad["libcaffeLink","getParamBlob",{Integer,Integer},{Real,1}];
+getTopBlobLL = LibraryFunctionLoad["libcaffeLink","getTopBlob",{Integer,Integer},{Real,1}];
+getBottomBlobLL = LibraryFunctionLoad["libcaffeLink","getBottomBlob",{Integer,Integer},{Real,1}];
+getParamBlobLL = LibraryFunctionLoad["libcaffeLink","getParamBlob",{Integer,Integer},{Real,1}];
+getTopBlobLNameLL = LibraryFunctionLoad["libcaffeLink","getTopBlobLName",{"UTF8String",Integer},{Real,1}];
+getBottomBlobLNameLL = LibraryFunctionLoad["libcaffeLink","getBottomBlobLName",{"UTF8String",Integer},{Real,1}];
+getParamBlobLNameLL = LibraryFunctionLoad["libcaffeLink","getParamBlobLName",{"UTF8String",Integer},{Real,1}];
 
-setTopBlob= LibraryFunctionLoad["libcaffeLink","setTopBlob",{{Real,1},Integer,Integer},"Void"];
-setBottomBlob= LibraryFunctionLoad["libcaffeLink","setTopBlob",{{Real,1},Integer,Integer},"Void"];
-setParamBlob= LibraryFunctionLoad["libcaffeLink","setParamBlob",{{Real,1},Integer,Integer},"Void"];
-setInput= LibraryFunctionLoad["libcaffeLink","setInput",{{Real,1}},"Void"];
+setTopBlobLL = LibraryFunctionLoad["libcaffeLink","setTopBlob",{{Real,1},Integer,Integer},"Void"];
+setBottomBlobLL = LibraryFunctionLoad["libcaffeLink","setBottomBlob",{{Real,1},Integer,Integer},"Void"];
+setParamBlobLL = LibraryFunctionLoad["libcaffeLink","setParamBlob",{{Real,1},Integer,Integer},"Void"];
+
+setTopBlobLNameLL = LibraryFunctionLoad["libcaffeLink","setTopBlobLName",{{Real,1},"UTF8String",Integer},"Void"];
+setBottomBlobLNameLL = LibraryFunctionLoad["libcaffeLink","setBottomBlobLName",{{Real,1},"UTF8String",Integer},"Void"];
+setParamBlobLNameLL = LibraryFunctionLoad["libcaffeLink","setParamBlobLName",{{Real,1},"UTF8String",Integer},"Void"];
+setInput = LibraryFunctionLoad["libcaffeLink","setInput",{{Real,1}},"Void"];
 (* -------------------------------------------------------------------------- *)
 
 
@@ -582,6 +592,95 @@ Return[False];
 ];
 (* -------------------------------------------------------------------------- *)
 
+
+getTopBlob[layer_, blob_:0] := Module[{},
+If[StringQ[layer],
+  Return[getTopBlobLNameLL[layer,blob]];
+  ,
+  Return[getTopBlobLL[layer,blob]];
+];
+];
+(* -------------------------------------------------------------------------- *)
+
+
+getParamBlob[layer_, blob_:0] := Module[{},
+If[StringQ[layer],
+  Return[getParamBlobLNameLL[layer,blob]];
+  ,
+  Return[getParamBlobLL[layer,blob]];
+];
+];
+(* -------------------------------------------------------------------------- *)
+
+
+getBottomBlob[layer_, blob_:0] := Module[{},
+If[StringQ[layer],
+  Return[getBottomBlobLNameLL[layer,blob]];
+  ,
+  Return[getBottomBlobLL[layer,blob]];
+];
+];
+(* -------------------------------------------------------------------------- *)
+
+
+getTopBlobSize[layer_] := Module[{},
+If[StringQ[layer],
+  Return[getTopBlobSizeLNameLL[layer]];
+  ,
+  Return[getTopBlobSizeLL[layer]];
+];
+];
+(* -------------------------------------------------------------------------- *)
+
+
+getBottomBlobSize[layer_] := Module[{},
+If[StringQ[layer],
+  Return[getBottomBlobSizeLNameLL[layer]];
+  ,
+  Return[getBottomBlobSizeLL[layer]];
+];
+];
+(* -------------------------------------------------------------------------- *)
+
+
+getParamBlobSize[layer_] := Module[{},
+If[StringQ[layer],
+  Return[getParamBlobSizeLNameLL[layer]];
+  ,
+  Return[getParamBlobSizeLL[layer]];
+];
+];
+(* -------------------------------------------------------------------------- *)
+
+
+setTopBlob[data_, layer_, blob_:0] := Module[{},
+If[StringQ[layer],
+  Return[setTopBlobLNameLL[data, layer, blob]];
+  ,
+  Return[setTopBlobLL[data, layer, blob]];
+];
+];
+(* -------------------------------------------------------------------------- *)
+
+
+setBottomBlob[data_, layer_, blob_:0] := Module[{},
+If[StringQ[layer],
+  Return[setBottomBlobLNameLL[data, layer, blob]];
+  ,
+  Return[setBottomBlobLL[data, layer, blob]];
+];
+];
+(* -------------------------------------------------------------------------- *)
+
+
+setParamBlob[data_, layer_, blob_:0] := Module[{},
+If[StringQ[layer],
+  Return[setParamBlobLNameLL[data, layer, blob]];
+  ,
+  Return[setParamBlobLL[data, layer, blob]];
+];
+];
+(* -------------------------------------------------------------------------- *)
 
 
 End[]

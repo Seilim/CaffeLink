@@ -90,6 +90,102 @@ extern "C" DLLEXPORT int setParamBlob(LIB_LINK_ARGS)
     return LIBRARY_NO_ERROR;
 }
 
+/** Mathematica librarylink wrapper for \c setTopBlob_ called by layer name.*/
+extern "C" DLLEXPORT int setTopBlobLName(LIB_LINK_ARGS)
+{
+    MTensor blobMT;
+    char* name;
+    int layerIdx;
+    int blobIdx;
+    double *data;
+    
+    if(Argc != 3){
+        printf("ERR: %s takes 3 argument: Real tensor data, UTF8String layer"
+                "name and Integer blob index\n",
+                __FUNCTION__);
+        libData->Message(MSG_WRONG_ARGS);
+        return LIBRARY_FUNCTION_ERROR;
+    }
+
+    blobMT = MArgument_getMTensor(Args[0]);
+    name = MArgument_getUTF8String(Args[1]);
+    layerIdx = getLayerIdx_(name);
+    if(layerIdx == -1)
+        return LIBRARY_FUNCTION_ERROR;
+    
+    blobIdx = MArgument_getInteger(Args[2]);
+    
+    data = libData->MTensor_getRealData(blobMT);
+    if(!setTopBlob_(&data, layerIdx, blobIdx))
+        return LIBRARY_FUNCTION_ERROR;
+
+    return LIBRARY_NO_ERROR;
+}
+
+/** Mathematica librarylink wrapper for \c setBottomBlob_ called by layer name.*/
+extern "C" DLLEXPORT int setBottomBlobLName(LIB_LINK_ARGS)
+{
+    MTensor blobMT;
+    char* name;
+    int layerIdx;
+    int blobIdx;
+    double *data;
+    
+    if(Argc != 3){
+        printf("ERR: %s takes 3 argument: Real tensor data, UTF8String layer"
+                "name and Integer blob index\n",
+                __FUNCTION__);
+        libData->Message(MSG_WRONG_ARGS);
+        return LIBRARY_FUNCTION_ERROR;
+    }
+
+    blobMT = MArgument_getMTensor(Args[0]);
+    name = MArgument_getUTF8String(Args[1]);
+    layerIdx = getLayerIdx_(name);
+    if(layerIdx == -1)
+        return LIBRARY_FUNCTION_ERROR;
+    
+    blobIdx = MArgument_getInteger(Args[2]);
+    
+    data = libData->MTensor_getRealData(blobMT);
+    if(!setBottomBlob_(&data, layerIdx, blobIdx))
+        return LIBRARY_FUNCTION_ERROR;
+
+    return LIBRARY_NO_ERROR;
+}
+
+/** Mathematica librarylink wrapper for \c setParamBlob_ called by layer name.*/
+extern "C" DLLEXPORT int setParamBlobLName(LIB_LINK_ARGS)
+{
+    MTensor blobMT;
+    char* name;
+    int layerIdx;
+    int blobIdx;
+    double *data;
+    
+    if(Argc != 3){
+        printf("ERR: %s takes 3 argument: Real tensor data, UTF8String layer"
+                "name and Integer blob index\n",
+                __FUNCTION__);
+        libData->Message(MSG_WRONG_ARGS);
+        return LIBRARY_FUNCTION_ERROR;
+    }
+
+    blobMT = MArgument_getMTensor(Args[0]);
+    name = MArgument_getUTF8String(Args[1]);
+    layerIdx = getLayerIdx_(name);
+    if(layerIdx == -1)
+        return LIBRARY_FUNCTION_ERROR;
+    
+    blobIdx = MArgument_getInteger(Args[2]);
+    
+    data = libData->MTensor_getRealData(blobMT);
+    if(!setParamBlob_(&data, layerIdx, blobIdx))
+        return LIBRARY_FUNCTION_ERROR;
+
+    return LIBRARY_NO_ERROR;
+}
+
 /** Mathematica librarylink wrapper for \c setInput_.*/
 extern "C" DLLEXPORT int setInput(LIB_LINK_ARGS)
 {

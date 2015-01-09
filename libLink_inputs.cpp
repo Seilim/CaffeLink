@@ -8,6 +8,7 @@
 #include "build_utils.hpp"
 #include "caffeLink.hpp"
 
+static MTensor inputBlobMT;
 
 /** Mathematica librarylink wrapper for \c setTopBlob_.*/
 extern "C" DLLEXPORT int setTopBlob(LIB_LINK_ARGS)
@@ -189,7 +190,6 @@ extern "C" DLLEXPORT int setParamBlobLName(LIB_LINK_ARGS)
 /** Mathematica librarylink wrapper for \c setInput_.*/
 extern "C" DLLEXPORT int setInput(LIB_LINK_ARGS)
 {
-    MTensor blobMT;
     double *data;
     
     if(Argc != 1){
@@ -200,9 +200,11 @@ extern "C" DLLEXPORT int setInput(LIB_LINK_ARGS)
         return LIBRARY_FUNCTION_ERROR;
     }
 
-    blobMT = MArgument_getMTensor(Args[0]);
+    if(inputBlobMT)
+        libData->MTensor_free(inputBlobMT);
+    inputBlobMT = MArgument_getMTensor(Args[0]);
     
-    data = libData->MTensor_getRealData(blobMT);
+    data = libData->MTensor_getRealData(inputBlobMT);
     if(!setInput_(&data))
         return LIBRARY_FUNCTION_ERROR;  
     

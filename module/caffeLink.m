@@ -24,7 +24,7 @@ prepareNetString::usage = "prepareNetString[string] sets up a new net from given
 loadNet::usage = "loadNet[path] loads previously exported or snapshoted net after the same net was prepared using prepareNet*."
 exportNet::usage = "exportNet[path] exports previously loaded net to selected path."
 
-testNet::usage = "testNet[] runs loaded net in test mode."
+evaluateNet::usage = "evaluateNet[] runs loaded net in test phase."
 trainNetString::usage = "trainNetString[solverParam] trains new net with solver protobuffer parameters given in string."
 trainNetFile::usage = "trainNetFile[path] trains new net with solver protobuffer parameters taken from file."
 trainNetSnapshotString::usage = "trainNetSnapshotString[solverParam, pathState] continues training from solver state file on 'pathState'. Solver parameters given as string."
@@ -537,7 +537,7 @@ prepareNetString = LibraryFunctionLoad["libcaffeLink", "prepareNetString", {"UTF
 loadNet = LibraryFunctionLoad["libcaffeLink", "loadNet", {"UTF8String"}, "Void"];
 exportNet = LibraryFunctionLoad["libcaffeLink", "exportNet", {"UTF8String"}, "Void"];
 
-testNet=LibraryFunctionLoad["libcaffeLink", "testNet", {}, "Void"];
+evaluateNet=LibraryFunctionLoad["libcaffeLink", "testNet", {}, "Void"];
 trainNetString=LibraryFunctionLoad["libcaffeLink", "trainNetString",{"UTF8String"},"Void"];
 trainNetFile=LibraryFunctionLoad["libcaffeLink", "trainNetFile",{"UTF8String"},"Void"];
 trainNetSnapshotString=LibraryFunctionLoad["libcaffeLink", "trainNetSnapshotString",{"UTF8String","UTF8String"},"Void"];
@@ -567,10 +567,10 @@ setTopBlobLL = LibraryFunctionLoad["libcaffeLink","setTopBlob",{{Real,1},Integer
 setBottomBlobLL = LibraryFunctionLoad["libcaffeLink","setBottomBlob",{{Real,1},Integer,Integer},"Void"];
 setParamBlobLL = LibraryFunctionLoad["libcaffeLink","setParamBlob",{{Real,1},Integer,Integer},"Void"];
 
-setTopBlobLNameLL = LibraryFunctionLoad["libcaffeLink","setTopBlobLName",{{Real,1},"UTF8String",Integer},"Void"];
-setBottomBlobLNameLL = LibraryFunctionLoad["libcaffeLink","setBottomBlobLName",{{Real,1},"UTF8String",Integer},"Void"];
-setParamBlobLNameLL = LibraryFunctionLoad["libcaffeLink","setParamBlobLName",{{Real,1},"UTF8String",Integer},"Void"];
-setInput = LibraryFunctionLoad["libcaffeLink","setInput",{{Real,1}},"Void"];
+setTopBlobLNameLL = LibraryFunctionLoad["libcaffeLink","setTopBlobLName",{{Real,1,"Manual"},"UTF8String",Integer},"Void"];
+setBottomBlobLNameLL = LibraryFunctionLoad["libcaffeLink","setBottomBlobLName",{{Real,1,"Manual"},"UTF8String",Integer},"Void"];
+setParamBlobLNameLL = LibraryFunctionLoad["libcaffeLink","setParamBlobLName",{{Real,1,"Manual"},"UTF8String",Integer},"Void"];
+setInput = LibraryFunctionLoad["libcaffeLink","setInput",{{Real,1,"Manual"}},"Void"];
 (* -------------------------------------------------------------------------- *)
 
 

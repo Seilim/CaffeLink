@@ -21,3 +21,7 @@ Assuming you have successfully build Caffe, you should have everything needed by
 * [LeNet](http://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf) MNIST example based on [Caffe example](https://github.com/BVLC/caffe/tree/master/examples/mnist)
   * Mathematica notebook: [mnist.nb](../master/module/demo/mnist.nb)
   * Pdf: [mnist.pdf](../master/module/demo/mnist.pdf)
+  
+* [AlexNet](http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks) ImageNet example based on [Caffe example](http://nbviewer.ipython.org/github/BVLC/caffe/blob/master/examples/filter_visualization.ipynb)
+  * Mathematica notebook: [imageNet.nb](../master/module/demo/imageNet.nb)
+  * Pdf: [imageNet.pdf](../master/module/demo/imageNet.pdf)

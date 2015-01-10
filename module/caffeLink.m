@@ -2,23 +2,15 @@
 
 BeginPackage["CaffeLink`"]
 
-newNet::usage = ""
-newSolver::usage = ""
-solverAddNetParam::usage = ""
-
 initCaffeLinkModule::usage = "initCaffeLinkModule[path] initializes module from caffe.proto file."
-NewNetOld::usage = "NewNetOld[name] returns new net with given name."
-NewSolverOld::usage = "NewSolverOld[type] returns new solver of given type."
-AddLayer::usage = "AddLayer[net, type, name] appends new layer of giventype and name to the given net."
-SetNetParam::usage = "SetNetParam[net, name, value] sets parameter 'name' to 'value' in the given net."
-SetLayerParam::usage = "SetLayerParam[net, i, name, value] sets parameter 'name' to 'value' in layer 'i' in net, layer 'i' is ith added layer to the net."
-SetSolverParam::usage = "SetSolverParam[solver, name, value] sets parameter 'name' to 'value' in the given solver."
+newNet::usage = "newNetOld[netParameters] returns net internal reprezentation, 'netParameters' format is {NetParam01, NetParam02, {{Layer01Param01, Layer01Param02, ..}, {Layer02Param01, Layer02Param02, ..}}}."
+newSolver::usage = "newSolver[solverParameters] return solver internal reprezentation, 'solverParameters' format is {SolverParam01, SolverParam02, ...}."
+solverAddNetParam::usage = "solverAddNetParam[solverParametersString, netParametersString] adds net definition to solver as net_param field. Returns resulting solver parameter string."
 getParamString::usage = "getParamString[net] generates protobuffer string from net compatible with Caffe."
-
 
 cblasTest::usage = "Test cblas stability."
 
-initCaffeLink::usage = "initCaffeLink[useDouble, useGpu, devID] initializes CaffeLink library with data type double or float, sets GPU or CPU mode and device ID for GPU mode."
+initCaffeLink::usage = "initCaffeLink[UseDouble, UseGPU, GPUDevice] initializes CaffeLink library with data type double or float, sets GPU or CPU mode and device ID for GPU mode, default is 0."
 prepareNetFile::usage = "prepareNetFile[path] sets up a new net from protobuffer file on given path."
 prepareNetString::usage = "prepareNetString[string] sets up a new net from given protobuffer string."
 loadNet::usage = "loadNet[path] loads previously exported or snapshoted net after the same net was prepared using prepareNet*."
@@ -36,17 +28,17 @@ printNetInfo::usage = "printNetInfo[] prints (in console, stdout) info about pre
 printWorkingPath::usage = "printWorkingPath[] prints (in console, stdout) root directory, executes 'pwd' command."
 
 getLayerNum::usage = "getLayerNum[] returns number of layers in prepared net."
-getTopBlobSize::usage = "getTopBlobSize[layerIdx] returns array of top blob dimensions: {num, channels, height, width}, 4 elements for every blob."
-getBottomBlobSize::usage = "getBottomBlobSize[layerIdx] returns array of bottom blob dimensions: {num, channels, height, width}, 4 elements for every blob."
-getParamBlobSize::usage = "getParamBlobSize[layerIdx] returns array of parameter blob dimensions: {num, channels, height, width}, 4 elements for every blob."
+getTopBlobSize::usage = "getTopBlobSize[layer] returns array of top blob dimensions: {num, channels, height, width}, 4 elements for each blob, 'layer' can be layer index or name."
+getBottomBlobSize::usage = "getBottomBlobSize[layer] returns array of bottom blob dimensions: {num, channels, height, width}, 4 elements for each blob, 'layer' can be layer index or name.."
+getParamBlobSize::usage = "getParamBlobSize[layer] returns array of parameter blob dimensions: {num, channels, height, width}, 4 elements for each blob, 'layer' can be layer index or name.."
 
-getTopBlob::usage = "getTopBlob[layerIdx, blobIdx] returns data stored in top 'blobIdx'-th blob of 'layerIdx'-th layer."
-getBottomBlob::usage = "getBottomBlob[layerIdx, blobIdx] returns data stored in bottom 'blobIdx'-th blob of 'layerIdx'-th layer."
-getParamBlob::usage = "getParamBlob[layerIdx, blobIdx] returns data stored in parameter 'blobIdx'-th blob of 'layerIdx'-th layer."
+getTopBlob::usage = "getTopBlob[layer, blobIdx] returns data stored in top 'blobIdx'-th blob of layer with index or name 'layer'. Default 'blobIdx' is 0."
+getBottomBlob::usage = "getBottomBlob[layer, blobIdx] returns data stored in bottom 'blobIdx'-th blob of layer with index or name 'layer'. Default 'blobIdx' is 0."
+getParamBlob::usage = "getParamBlob[layer, blobIdx] returns data stored in parameter 'blobIdx'-th blob of layer with index or name 'layer'. Default 'blobIdx' is 0."
 
-setTopBlob::usage = "setTopBlob[data, layerIdx, blobIdx] inserts 'data' to top 'blobIdx'-th blob of 'layerIdx'-th layer."
-setBottomBlob::usage = "setBottomBlob[data, layerIdx, blobIdx] inserts 'data' to bottom 'blobIdx'-th blob of 'layerIdx'-th layer."
-setParamBlob::usage = "setParamBlob[data, layerIdx, blobIdx] inserts 'data' to parameter 'blobIdx'-th blob of 'layerIdx'-th layer."
+setTopBlob::usage = "setTopBlob[data, layer, blobIdx] inserts 'data' to top 'blobIdx'-th blob of layer with index or name 'layer'. Default 'blobIdx' is 0."
+setBottomBlob::usage = "setBottomBlob[data, layer, blobIdx] inserts 'data' to bottom 'blobIdx'-th blob of layer with index or name 'layer'. Default 'blobIdx' is 0."
+setParamBlob::usage = "setParamBlob[data, layer, blobIdx] inserts 'data' to parameter 'blobIdx'-th blob of layer with index or name 'layer'. Default 'blobIdx' is 0."
 setInput::usage = "setInput[data] inserts 'data' to input blob. Work only with net without input (data) layer."
 (* -------------------------------------------------------------------------- *)
 
@@ -109,7 +101,7 @@ layerParTypeLUT = {
 
 initCaffeLinkModule[caffeProto_] := Module[{clProto, msgWithEnums, globalEnums},
 If[!FileExistsQ[caffeProto],
-Throw[StringJoin["file not found: ", caffeProto]];
+	Throw[StringJoin["file not found: ", caffeProto]];
 ];
 
 clProto = CleanProto[caffeProto];
@@ -127,17 +119,17 @@ netname = Replace["name",np];
 
 nn = NewNetOld[netname];
 For[i = 1, i <= Length[np], i++,
-nn = SetNetParam[nn, np[[i, 1]], np[[i, 2]]];
+	nn = SetNetParam[nn, np[[i, 1]], np[[i, 2]]];
 ];
 
 For[i = 1, i <= Length[netp[[-1]]], i++,
-lap = netp[[-1, i]];
-lname = Replace["name",lap];
-ltype = Replace["type",lap];
-nn = AddLayer[nn,ltype,lname];
-For[j = 1, j <= Length[lap], j++,
-nn = SetLayerParam[nn,i, lap[[j,1]],lap[[j,2]]];
-];
+	lap = netp[[-1, i]];
+	lname = Replace["name",lap];
+	ltype = Replace["type",lap];
+	nn = AddLayer[nn,ltype,lname];
+	For[j = 1, j <= Length[lap], j++,
+		nn = SetLayerParam[nn,i, lap[[j,1]],lap[[j,2]]];
+	];
 ];
 nn
 ];
@@ -157,7 +149,7 @@ type = Replace["solver_type",solp];
 
 sol = NewSolverOld[type];
 For[i = 1, i <= Length[solp], i++,
-sol = SetSolverParam[sol, solp[[i, 1]], solp[[i, 2]]];
+	sol = SetSolverParam[sol, solp[[i, 1]], solp[[i, 2]]];
 ];
 sol
 ];
@@ -532,18 +524,18 @@ GetLayerParTypeBased[] := layerParTypeBased;
 cblasTest=LibraryFunctionLoad["libcaffeLink", "cblasTest", {}, "Void"];
 
 initCaffeLinkLL=LibraryFunctionLoad["libcaffeLink", "initCaffeLink", {"Boolean", "Boolean", Integer}, "Void"];
-prepareNetFile = LibraryFunctionLoad["libcaffeLink", "prepareNetFile", {"UTF8String"}, "Void"];
+prepareNetFileLL = LibraryFunctionLoad["libcaffeLink", "prepareNetFile", {"UTF8String"}, "Void"];
 prepareNetString = LibraryFunctionLoad["libcaffeLink", "prepareNetString", {"UTF8String"}, "Void"];
-loadNet = LibraryFunctionLoad["libcaffeLink", "loadNet", {"UTF8String"}, "Void"];
+loadNetLL = LibraryFunctionLoad["libcaffeLink", "loadNet", {"UTF8String"}, "Void"];
 exportNet = LibraryFunctionLoad["libcaffeLink", "exportNet", {"UTF8String"}, "Void"];
 
 evaluateNet=LibraryFunctionLoad["libcaffeLink", "testNet", {}, "Void"];
 trainNetString=LibraryFunctionLoad["libcaffeLink", "trainNetString",{"UTF8String"},"Void"];
-trainNetFile=LibraryFunctionLoad["libcaffeLink", "trainNetFile",{"UTF8String"},"Void"];
-trainNetSnapshotString=LibraryFunctionLoad["libcaffeLink", "trainNetSnapshotString",{"UTF8String","UTF8String"},"Void"];
-trainNetSnapshotFile=LibraryFunctionLoad["libcaffeLink", "trainNetSnapshotFile",{"UTF8String","UTF8String"},"Void"];
-trainNetWeightsString=LibraryFunctionLoad["libcaffeLink", "trainNetWeightsString",{"UTF8String","UTF8String"},"Void"];
-trainNetWeightsFile=LibraryFunctionLoad["libcaffeLink", "trainNetWeightsFile",{"UTF8String","UTF8String"},"Void"];
+trainNetFileLL=LibraryFunctionLoad["libcaffeLink", "trainNetFile",{"UTF8String"},"Void"];
+trainNetSnapshotStringLL=LibraryFunctionLoad["libcaffeLink", "trainNetSnapshotString",{"UTF8String","UTF8String"},"Void"];
+trainNetSnapshotFileLL=LibraryFunctionLoad["libcaffeLink", "trainNetSnapshotFile",{"UTF8String","UTF8String"},"Void"];
+trainNetWeightsStringLL=LibraryFunctionLoad["libcaffeLink", "trainNetWeightsString",{"UTF8String","UTF8String"},"Void"];
+trainNetWeightsFileLL=LibraryFunctionLoad["libcaffeLink", "trainNetWeightsFile",{"UTF8String","UTF8String"},"Void"];
 
 printNetInfo = LibraryFunctionLoad["libcaffeLink","printNetInfo",{},"Void"];
 printWorkingPath = LibraryFunctionLoad["libcaffeLink","printWorkingPath",{},"Void"];
@@ -582,9 +574,80 @@ devid = Replace["GPUDevice", args];
 
 res = initCaffeLinkLL[useDouble, useGpu, devid];
 If[res == Null, Return[True],
-Print[res];
-Return[False];
+	Print[res];
+	Return[False];
 ];
+];
+(* -------------------------------------------------------------------------- *)
+
+
+prepareNetFile[path_] := Module[{},
+If[!FileExistsQ[path],
+	Throw[StringJoin["file not found: ", path]];
+];
+prepareNetFileLL[path]
+];
+(* -------------------------------------------------------------------------- *)
+
+
+loadNet[path_] := Module[{},
+If[!FileExistsQ[path],
+	Throw[StringJoin["file not found: ", path]];
+];
+loadNetLL[path]
+];
+(* -------------------------------------------------------------------------- *)
+
+
+trainNetFile[path_] := Module[{},
+If[!FileExistsQ[path],
+	Throw[StringJoin["file not found: ", path]];
+];
+trainNetFileLL[path]
+];
+(* -------------------------------------------------------------------------- *)
+
+
+trainNetSnapshotString
+
+trainNetSnapshotString[solver_, path_] := Module[{},
+If[!FileExistsQ[path],
+	Throw[StringJoin["file not found: ", path]];
+];
+trainNetSnapshotStringLL[solver, path]
+];
+(* -------------------------------------------------------------------------- *)
+
+
+trainNetSnapshotFile[solverPath_, path_] := Module[{},
+If[!FileExistsQ[path],
+	Throw[StringJoin["file not found: ", path]];
+];
+If[!FileExistsQ[solverPath],
+	Throw[StringJoin["file not found: ", solverPath]];
+];
+trainNetSnapshotFileLL[solverPath, path]
+];
+(* -------------------------------------------------------------------------- *)
+
+
+trainNetWeightsString[solver_, path_] := Module[{},
+If[!FileExistsQ[path],
+	Throw[StringJoin["file not found: ", path]];
+];
+trainNetWeightsStringLL[solver, path]
+];
+(* -------------------------------------------------------------------------- *)
+
+
+trainNetWeightsFile[solverPath_, path_] := Module[{},
+If[!FileExistsQ[path],
+	Throw[StringJoin["file not found: ", path]];
+];
+If[!FileExistsQ[solverPath],
+	Throw[StringJoin["file not found: ", solverPath]];
+];
+trainNetWeightsFileLL[solverPath, path]
 ];
 (* -------------------------------------------------------------------------- *)
 

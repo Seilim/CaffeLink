@@ -14,13 +14,14 @@ extern "C" {
 extern "C" bool doublesToFloats(double* in, float** out, long size)
 {
     int i;
-    (*out) = NULL;
-    (*out) = (float*) malloc(sizeof (float) * size);
+    float *tmp;
+    tmp = (float*) realloc(*out, sizeof(float) * size);
 
-    if (!*out) {
+    if (!tmp) {
         printf("%s: allocation failed\n", __FUNCTION__);
         return false;
     }
+    *out = tmp;
 
     for (i = 0; i < size; i++)
         (*out)[i] = in[i];

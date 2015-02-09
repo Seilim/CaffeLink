@@ -19,6 +19,13 @@ static bool inited = false;
 static CLnets<double> netsD;
 static CLnets<float> netsF;
 
+static float *inputDataF;
+static float **paramDataF;
+static int *pd;
+
+extern "C" bool initParamDataF();
+extern "C" void freeParamDataF();
+
 extern "C" void initCaffeLink_(bool useDoublesPar, bool useGPU, int devID)
 {
     if (!inited) {
@@ -52,19 +59,60 @@ extern "C" bool isUsingDouble()
 }
 
 extern "C" bool prepareNetString_(char* paramStr)
-{    
-    if(useDoubles)
-        return netsD.prepareNetString(paramStr);
-    else
-        return netsF.prepareNetString(paramStr);
+{
+    if (useDoubles) {
+        if (netsD.prepareNetString(paramStr))
+            return netsD.initParamDataLUT(&pd);
+    } else {
+        freeParamDataF();
+        if (netsF.prepareNetString(paramStr) && netsF.initParamDataLUT(&pd))
+            return initParamDataF();
+    }
+
+    return false;
 }
 
 extern "C" bool prepareNetFile_(char* path)
 {
-    if(useDoubles)
-        return netsD.prepareNetFile(path);
-    else
-        return netsF.prepareNetFile(path);
+    if (useDoubles) {
+        if (netsD.prepareNetFile(path))
+            return netsD.initParamDataLUT(&pd);
+
+    } else {
+        freeParamDataF();
+        if (netsF.prepareNetFile(path) && netsF.initParamDataLUT(&pd))
+            return initParamDataF();
+    }
+
+    return false;
+}
+
+extern "C" bool initParamDataF()
+{   
+    int i;
+    paramDataF = (float**) malloc(sizeof(float*) * pd[getLayerNum_()]);
+    if (!paramDataF) {
+        printf("%s: allocation failed\n", __FUNCTION__);
+        return false;
+    }
+
+    for (i = 0; i < pd[getLayerNum_()]; i++)
+        paramDataF[i] = NULL;
+    
+    return true;
+}
+
+extern "C" void freeParamDataF()
+{
+    int i;
+    if(!pd || !paramDataF)
+        return;
+    
+    for(i = 0; i < pd[getLayerNum_()]; i++)
+        if(paramDataF[i])
+            free(paramDataF[i]);
+       
+    free(paramDataF);
 }
 
 extern "C" void loadNet_(char* path)
@@ -160,6 +208,11 @@ extern "C" int getLayerIdx_(char* name)
         return netsD.getLayerIdx(name);
     else
         return netsF.getLayerIdx(name);
+}
+
+extern "C" int* getParamDataLUT()
+{
+    return pd;
 }
 
 extern "C" bool getBlobSize_(int *blobSize, bool (*getBlSize)(int**, int*, int),
@@ -271,14 +324,15 @@ extern "C" bool setParamBlob_(double** data, int layerIdx, int blobIdx)
     if (useDoubles)
         return netsD.setParamBlob(data, layerIdx, blobIdx);
     else {
-        float* tmp;
-        int blobSize;
+        int blobSize;        
+        int paramDataIdx = getParamDataLUT()[layerIdx] + blobIdx;
+        
         if (!getBlobSize_(&blobSize, *getParamBlobSize_, layerIdx, blobIdx))
             return false;
-        if (!doublesToFloats(*data, &tmp, blobSize)) {
+        if (!doublesToFloats(*data, &paramDataF[paramDataIdx], blobSize)) {
             return false;
         }
-        return netsF.setParamBlob(&tmp, layerIdx, blobIdx);
+        return netsF.setParamBlob(&paramDataF[paramDataIdx], layerIdx, blobIdx);
     }
 }
 
@@ -287,13 +341,12 @@ extern "C" bool setInput_(double **inputData)
     if(useDoubles)
         return netsD.setInput(inputData);
     else{
-        float* tmp;
         int blobSize;        
         if (!getBlobSize_(&blobSize, *getInputSize_, 0, 0))
             return false;
-        if (!doublesToFloats(*inputData, &tmp, blobSize)) {
+        if (!doublesToFloats(*inputData, &inputDataF, blobSize)) {
             return false;
         }
-        return netsF.setInput(&tmp);
+        return netsF.setInput(&inputDataF);
     }
 }

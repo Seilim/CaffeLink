@@ -16,6 +16,7 @@ public:
 
     bool prepareNetString(char* paramStr);
     bool prepareNetFile(char* path);
+    bool initParamDataLUT(int** pd);
     void loadNet(char* path);
     
     void testNet();

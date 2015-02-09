@@ -555,9 +555,9 @@ getTopBlobLNameLL = LibraryFunctionLoad["libcaffeLink","getTopBlobLName",{"UTF8S
 getBottomBlobLNameLL = LibraryFunctionLoad["libcaffeLink","getBottomBlobLName",{"UTF8String",Integer},{Real,1}];
 getParamBlobLNameLL = LibraryFunctionLoad["libcaffeLink","getParamBlobLName",{"UTF8String",Integer},{Real,1}];
 
-setTopBlobLL = LibraryFunctionLoad["libcaffeLink","setTopBlob",{{Real,1},Integer,Integer},"Void"];
-setBottomBlobLL = LibraryFunctionLoad["libcaffeLink","setBottomBlob",{{Real,1},Integer,Integer},"Void"];
-setParamBlobLL = LibraryFunctionLoad["libcaffeLink","setParamBlob",{{Real,1},Integer,Integer},"Void"];
+setTopBlobLL = LibraryFunctionLoad["libcaffeLink","setTopBlob",{{Real,1,"Manual"},Integer,Integer},"Void"];
+setBottomBlobLL = LibraryFunctionLoad["libcaffeLink","setBottomBlob",{{Real,1,"Manual"},Integer,Integer},"Void"];
+setParamBlobLL = LibraryFunctionLoad["libcaffeLink","setParamBlob",{{Real,1,"Manual"},Integer,Integer},"Void"];
 
 setTopBlobLNameLL = LibraryFunctionLoad["libcaffeLink","setTopBlobLName",{{Real,1,"Manual"},"UTF8String",Integer},"Void"];
 setBottomBlobLNameLL = LibraryFunctionLoad["libcaffeLink","setBottomBlobLName",{{Real,1,"Manual"},"UTF8String",Integer},"Void"];

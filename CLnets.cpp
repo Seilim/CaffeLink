@@ -44,6 +44,38 @@ bool CLnets<Dtype>::prepareNetFile(char* path)
 }
 
 template <typename Dtype>
+bool CLnets<Dtype>::initParamDataLUT(int** pd)
+{
+    long unsigned int li;
+    std::string name;
+    caffe::Layer<Dtype>* layer;
+    long unsigned int layerNum = net->layers().size();
+    
+    int paramBlobCnt = 0;
+    int *tmp;
+    tmp = (int*) realloc(*pd, sizeof(int) * (layerNum + 1));
+
+    if (!tmp) {
+        printf("%s: allocation failed\n", __FUNCTION__);
+        return false;
+    }
+    *pd = tmp;
+
+    for (li = 0; li < layerNum; li++) {
+        (*pd)[li] = paramBlobCnt;
+
+        name = net->layer_names()[li];
+        layer = net->layer_by_name(name).get();
+        
+        paramBlobCnt += layer->blobs().size();
+    }
+    /* stores total count of parameter blobs in last cell */
+    (*pd)[layerNum] = paramBlobCnt;
+    
+    return true;
+}
+
+template <typename Dtype>
 void CLnets<Dtype>::loadNet(char* path)
 {
     this->net->CopyTrainedLayersFrom(path);
@@ -131,7 +163,7 @@ void CLnets<Dtype>::printNetInfo()
     
     printf("\n");    
     
-    for (li = 0; li < layerNum; li++) {
+    for (li = 0; li < layerNum; li++) {        
 
         name = net->layer_names()[li];
         layer = net->layer_by_name(name).get();

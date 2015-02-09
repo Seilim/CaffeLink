@@ -99,6 +99,13 @@ int getLayerNum_();
  */
 int getLayerIdx_(char* name);
 
+/**
+ * Returns array of size num. layers + 1 with starting indices of parameter
+ * data of each layer. Last cell contains size of parameter data array. 
+ * @return 
+ */
+int* getParamDataLUT();
+
 /** 
  * Calculates blob size using given function and stores it to given pointer. 
  * Returns false on failure

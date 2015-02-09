@@ -6,6 +6,7 @@
 
 #include "build_utils.hpp"
 #include "caffeLink.hpp"
+#include "libLink_inputs.hpp"
 
 
 /* Necessary for Mathematica library link. */
@@ -64,8 +65,14 @@ extern "C" DLLEXPORT int prepareNetFile(LIB_LINK_ARGS)
     
     path = MArgument_getUTF8String(Args[0]);
     
+    if(isUsingDouble())
+        freeParamDataMT(libData);
+    
     if(!prepareNetFile_(path))
         return LIBRARY_FUNCTION_ERROR;
+    
+    if(isUsingDouble())
+        initParamDataMT();
     
     return LIBRARY_NO_ERROR;
 }
@@ -83,16 +90,23 @@ extern "C" DLLEXPORT int prepareNetString(LIB_LINK_ARGS)
     }
     
     str = MArgument_getUTF8String(Args[0]);
-    
-    if(!prepareNetString_(str))
+
+    if (isUsingDouble())
+        freeParamDataMT(libData);
+
+    if (!prepareNetString_(str))
         return LIBRARY_FUNCTION_ERROR;
+
+    if (isUsingDouble())
+        initParamDataMT();
+    
     return LIBRARY_NO_ERROR;
 }
 
 /** Mathematica librarylink wrapper for \c loadNet_.*/
 extern "C" DLLEXPORT int loadNet(LIB_LINK_ARGS)
 {
-    char* path;   
+    char* path; 
     
     if (Argc != 1) {
         printf("ERR: %s takes 1 arguments: UTF8String path to net data\n",
@@ -100,8 +114,8 @@ extern "C" DLLEXPORT int loadNet(LIB_LINK_ARGS)
         libData->Message(MSG_WRONG_ARGS);
         return LIBRARY_FUNCTION_ERROR;
     }
-    
-    path = MArgument_getUTF8String(Args[0]);    
+
+    path = MArgument_getUTF8String(Args[0]); 
     loadNet_(path);
 
     return LIBRARY_NO_ERROR;

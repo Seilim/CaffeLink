@@ -7,8 +7,43 @@
 
 #include "build_utils.hpp"
 #include "caffeLink.hpp"
+#include "libLink_inputs.hpp"
 
 static MTensor inputBlobMT;
+static MTensor *paramDataMT;
+
+extern "C" bool initParamDataMT()
+{
+    int i;
+    int *pd;
+    pd = getParamDataLUT();
+
+    paramDataMT = (MTensor*) malloc(sizeof(MTensor) * pd[getLayerNum_()]);
+    if (!paramDataMT) {
+        printf("%s: allocation failed\n", __FUNCTION__);
+        return false;
+    }
+    
+    for (i = 0; i < pd[getLayerNum_()]; i++)
+        paramDataMT[i] = NULL;
+    
+    return true;
+}
+
+extern "C" void freeParamDataMT(WolframLibraryData libData)
+{
+    int i;
+    int *pd;
+    pd = getParamDataLUT();
+    if(!pd || !paramDataMT)
+        return;
+
+    for(i = 0; i < pd[getLayerNum_()]; i++)
+        if(paramDataMT[i])
+            libData->MTensor_free(paramDataMT[i]);
+    
+    free(paramDataMT);
+}
 
 /** Mathematica librarylink wrapper for \c setTopBlob_.*/
 extern "C" DLLEXPORT int setTopBlob(LIB_LINK_ARGS)
@@ -71,6 +106,7 @@ extern "C" DLLEXPORT int setParamBlob(LIB_LINK_ARGS)
     int layerIdx;
     int blobIdx;
     double *data;
+    int parDataIdx;
     
     if(Argc != 3){
         printf("ERR: %s takes 3 argument: Real tensor data, Integer layer index"
@@ -85,8 +121,21 @@ extern "C" DLLEXPORT int setParamBlob(LIB_LINK_ARGS)
     blobIdx = MArgument_getInteger(Args[2]);
     
     data = libData->MTensor_getRealData(blobMT);
-    if(!setParamBlob_(&data, layerIdx, blobIdx))
+    if(!setParamBlob_(&data, layerIdx, blobIdx)){
+        libData->MTensor_free(blobMT);
         return LIBRARY_FUNCTION_ERROR;
+    }
+    
+    if (!isUsingDouble())
+        /* MTensor (doubles) was converted to float, hence is not needed */
+        libData->MTensor_free(blobMT);
+    else {
+        /* free previous MTensor and store the new one */
+        parDataIdx = getParamDataLUT()[layerIdx] + blobIdx;
+        if (paramDataMT[parDataIdx])
+            libData->MTensor_free(paramDataMT[parDataIdx]);
+        paramDataMT[parDataIdx] = blobMT;
+    }
 
     return LIBRARY_NO_ERROR;
 }
@@ -163,6 +212,7 @@ extern "C" DLLEXPORT int setParamBlobLName(LIB_LINK_ARGS)
     int layerIdx;
     int blobIdx;
     double *data;
+    int parDataIdx;
     
     if(Argc != 3){
         printf("ERR: %s takes 3 argument: Real tensor data, UTF8String layer"
@@ -175,14 +225,29 @@ extern "C" DLLEXPORT int setParamBlobLName(LIB_LINK_ARGS)
     blobMT = MArgument_getMTensor(Args[0]);
     name = MArgument_getUTF8String(Args[1]);
     layerIdx = getLayerIdx_(name);
-    if(layerIdx == -1)
+    if(layerIdx == -1){
+        libData->MTensor_free(blobMT);
         return LIBRARY_FUNCTION_ERROR;
+    }
     
     blobIdx = MArgument_getInteger(Args[2]);
-    
+
     data = libData->MTensor_getRealData(blobMT);
-    if(!setParamBlob_(&data, layerIdx, blobIdx))
+    if (!setParamBlob_(&data, layerIdx, blobIdx)) {
+        libData->MTensor_free(blobMT);
         return LIBRARY_FUNCTION_ERROR;
+    }
+    
+    if (!isUsingDouble())
+        /* MTensor (doubles) was converted to float, hence is not needed */
+        libData->MTensor_free(blobMT);
+    else {
+        /* free previous MTensor and store the new one */
+        parDataIdx = getParamDataLUT()[layerIdx] + blobIdx;        
+        if (paramDataMT[parDataIdx])           
+            libData->MTensor_free(paramDataMT[parDataIdx]);
+        paramDataMT[parDataIdx] = blobMT;
+    }
 
     return LIBRARY_NO_ERROR;
 }

@@ -5,15 +5,19 @@
 
 # Selects compiler.
 CXX=g++
-CXXFLAGS=-c -Wall
+CXXFLAGS=-c
+
+# If you do not have CUDA and/or compiled Caffe without GPU, uncomment this.
+# CXXFLAGS+=-DCPU_ONLY
 
 # Change this to your Mathematica installation path. Something like:
 # <Mathematica_root>/SystemFiles/IncludeFiles/C
 MATH_IDIR=/Applications/Mathematica.app/SystemFiles/IncludeFiles/C/
-# Change these 3 lines to point to your Caffe directory with builded library (Caffe's make distribute)
+# Change these 4 lines to point to your Caffe directory with builded library (Caffe's make distribute)
 # and headers.
 CAFFE_DIR=/Users/drchajan/devel/C/caffe/distribute
 CAFFE_IDIR=$(CAFFE_DIR)/include
+CAFFE_IDIR2=$(CAFFE_DIR)/build/src
 CAFFE_LDIR=$(CAFFE_DIR)/lib
 
 CUDA_IDIR=/Developer/NVIDIA/CUDA-6.5/include
@@ -22,33 +26,33 @@ BLAS_IDIR=/System/Library/Frameworks/Accelerate.framework/Versions/Current/Frame
 DIST_DIR=dist
 BUILD_DIR=build
 
-IDIR=-I$(CAFFE_IDIR) -I$(MATH_IDIR) -I$(CUDA_IDIR) -I$(BLAS_IDIR)
+IDIR=-I$(CAFFE_IDIR) -I$(CAFFE_IDIR2) -I$(MATH_IDIR) -I$(CUDA_IDIR) -I$(BLAS_IDIR)
 LDIR=-L$(CAFFE_LDIR)
 
 
 LDFLAGS=$(IDIR) $(LDIR) -stdlib=libstdc++ -lstdc++ -lprotobuf -lglog -lcaffe -shared -fPIC
 SOURCES=caffeLink.cpp CLnets.cpp utils.cpp\
-  libLink_inputs.cpp libLink_outputs.cpp libLink_start.cpp 
+  libLink_inputs.cpp libLink_outputs.cpp libLink_start.cpp
 OBJECTS=$(SOURCES:%.cpp=$(BUILD_DIR)/%.o)
 LIBNAME=libcaffeLink.dylib
 
 
 
 all: dirs $(SOURCES) $(LIBNAME)
-	
+
 $(LIBNAME): $(OBJECTS)
 	$(CXX) $(LDFLAGS) $(OBJECTS) -o $(DIST_DIR)/$@
 
 $(BUILD_DIR)/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $< -o $@
-	
+
 clean: clean.obj
 	rm -rf $(DIST_DIR)/$(LIBNAME)
-	
+
 clean.obj:
 	rm -rf $(OBJECTS)
-	
-	
+
+
 dirs:
 	mkdir -p $(DIST_DIR)
 	mkdir -p $(BUILD_DIR)

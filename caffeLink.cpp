@@ -39,18 +39,19 @@ extern "C" void initCaffeLink_(bool useDoublesPar, bool useGPU, int devID)
         printf(" Net data type: double\n");
     else
         printf(" Net data type: float\n");
-    
-    if(useGPU){
+
+    if(useGPU && !CFL_CPU_ONLY){
         caffe::Caffe::set_mode(caffe::Caffe::GPU);
         caffe::Caffe::SetDevice(devID);
         printf(" Mode: GPU, dev ID: %d\n", devID);
     }
     else{
+        if(useGPU)
+            printf("To use GPU, please recompile CaffeLink (and Caffe)\n"
+                "with CPU_ONLY undefined.\n");
         printf(" Mode: CPU\n");
         caffe::Caffe::set_mode(caffe::Caffe::CPU);
     }
-    
-    caffe::Caffe::set_phase(caffe::Caffe::TEST);
 }
 
 extern "C" bool isUsingDouble()
@@ -88,7 +89,7 @@ extern "C" bool prepareNetFile_(char* path)
 }
 
 extern "C" bool initParamDataF()
-{   
+{
     int i;
     paramDataF = (float**) malloc(sizeof(float*) * pd[getLayerNum_()]);
     if (!paramDataF) {
@@ -98,7 +99,7 @@ extern "C" bool initParamDataF()
 
     for (i = 0; i < pd[getLayerNum_()]; i++)
         paramDataF[i] = NULL;
-    
+
     return true;
 }
 
@@ -107,16 +108,16 @@ extern "C" void freeParamDataF()
     int i;
     if(!pd || !paramDataF)
         return;
-    
+
     for(i = 0; i < pd[getLayerNum_()]; i++)
         if(paramDataF[i])
             free(paramDataF[i]);
-       
+
     free(paramDataF);
 }
 
 extern "C" void loadNet_(char* path)
-{ 
+{
     printf("net data src: %s\n", path);
     if(useDoubles)
         netsD.loadNet(path);
@@ -126,20 +127,18 @@ extern "C" void loadNet_(char* path)
 
 extern "C" void testNet_()
 {
-    caffe::Caffe::set_phase(caffe::Caffe::TEST);
-    
     if(useDoubles)
         netsD.testNet();
     else
-        netsF.testNet();    
+        netsF.testNet();
 }
 
 extern "C"
 bool trainNet_(char *param, bool paramIsFile, int trainMode, char* path)
 {
     bool success;
-    caffe::SolverParameter solverParam; 
-    
+    caffe::SolverParameter solverParam;
+
     if (paramIsFile) {
         success = caffe::ReadProtoFromTextFile(param, &solverParam);
     } else {
@@ -149,12 +148,12 @@ bool trainNet_(char *param, bool paramIsFile, int trainMode, char* path)
             return false;
         }
     }
-    
+
     if(useDoubles)
         netsD.trainNet(&solverParam, trainMode, path);
     else
         netsF.trainNet(&solverParam, trainMode, path);
-    
+
     return true;
 }
 
@@ -177,7 +176,7 @@ extern "C" void printNetInfo_()
      * but vector in net.params() is a list of all parameter blobs so indexing
      * is not simple since some layers has more than one par. bl. (filters
      * and bias...) and some has none.
-     * 
+     *
      * Blob is caffe's ultimate data storage. Data are interpeted as 4D array
      * stored in 1D:
      * [image, channel, row, collumn].
@@ -222,12 +221,12 @@ extern "C" bool getBlobSize_(int *blobSize, bool (*getBlSize)(int**, int*, int),
     int *dims, dimSize;
     if(!getBlSize(&dims, &dimSize, layerIdx) || dimSize == 0)
         return false;
-    
+
     *blobSize = 1;
     for(i = blobIdx * 4; i < (blobIdx + 1) * 4; i++)
         *blobSize *= dims[i];
-    
-    free(dims); 
+
+    free(dims);
     return true;
 }
 
@@ -324,9 +323,9 @@ extern "C" bool setParamBlob_(double** data, int layerIdx, int blobIdx)
     if (useDoubles)
         return netsD.setParamBlob(data, layerIdx, blobIdx);
     else {
-        int blobSize;        
+        int blobSize;
         int paramDataIdx = getParamDataLUT()[layerIdx] + blobIdx;
-        
+
         if (!getBlobSize_(&blobSize, *getParamBlobSize_, layerIdx, blobIdx))
             return false;
         if (!doublesToFloats(*data, &paramDataF[paramDataIdx], blobSize)) {
@@ -341,7 +340,7 @@ extern "C" bool setInput_(double **inputData)
     if(useDoubles)
         return netsD.setInput(inputData);
     else{
-        int blobSize;        
+        int blobSize;
         if (!getBlobSize_(&blobSize, *getInputSize_, 0, 0))
             return false;
         if (!doublesToFloats(*inputData, &inputDataF, blobSize)) {

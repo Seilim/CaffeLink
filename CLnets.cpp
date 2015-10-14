@@ -4,9 +4,11 @@
 
 #include <google/protobuf/text_format.h>
 #include "caffe/caffe.hpp"
+#include "caffe/solver.hpp"
 
 #include "build_utils.hpp"
 #include "CLnets.hpp"
+
 
 template <typename Dtype>
 CLnets<Dtype>::CLnets()
@@ -16,19 +18,19 @@ CLnets<Dtype>::CLnets()
 
 template <typename Dtype>
 bool CLnets<Dtype>::prepareNetString(char* paramStr)
-{    
-    caffe::NetParameter param;    
+{
+    caffe::NetParameter param;
     bool success = google::protobuf::TextFormat::ParseFromString(paramStr, &param);
     if(!success) {
-        printf("ERR in %s: Could not creat net\n", __FUNCTION__);
+        printf("ERR in %s: Could not create net\n", __FUNCTION__);
         return false;
     }
-    
+
     if(this->net)
         delete this->net;
-    
+
     this->net = new caffe::Net<Dtype>(param);
-    
+
     return true;
 }
 
@@ -37,8 +39,8 @@ bool CLnets<Dtype>::prepareNetFile(char* path)
 {
     if(this->net)
         delete this->net;
-    
-    this->net = new caffe::Net<Dtype>(path);
+
+    this->net = new caffe::Net<Dtype>(path, caffe::TEST);
 
     return true;
 }
@@ -50,7 +52,7 @@ bool CLnets<Dtype>::initParamDataLUT(int** pd)
     std::string name;
     caffe::Layer<Dtype>* layer;
     long unsigned int layerNum = net->layers().size();
-    
+
     int paramBlobCnt = 0;
     int *tmp;
     tmp = (int*) realloc(*pd, sizeof(int) * (layerNum + 1));
@@ -66,12 +68,12 @@ bool CLnets<Dtype>::initParamDataLUT(int** pd)
 
         name = net->layer_names()[li];
         layer = net->layer_by_name(name).get();
-        
+
         paramBlobCnt += layer->blobs().size();
     }
     /* stores total count of parameter blobs in last cell */
     (*pd)[layerNum] = paramBlobCnt;
-    
+
     return true;
 }
 
@@ -85,12 +87,18 @@ template <typename Dtype>
 void CLnets<Dtype>::trainNet(caffe::SolverParameter *param,
         int trainMode, char* path)
 {
-    // possibly overide mode
-    if (param->solver_mode() == caffe::SolverParameter_SolverMode_GPU) {
-        caffe::Caffe::set_mode(caffe::Caffe::GPU);
-        caffe::Caffe::SetDevice(param->device_id());
-        printf("Solver uses GPU with device id %d.\n", param->device_id());
-    } else {
+    // possibly overide initialization mode
+    if (!CFL_CPU_ONLY) {
+        if (param->solver_mode() == caffe::SolverParameter_SolverMode_GPU) {
+            caffe::Caffe::set_mode(caffe::Caffe::GPU);
+            caffe::Caffe::SetDevice(param->device_id());
+            printf("Solver uses GPU with device id %d.\n", param->device_id());
+        }
+    }
+    else {
+        if(param->solver_mode() == caffe::SolverParameter_SolverMode_GPU)
+            printf("To use GPU, please recompile CaffeLink (and Caffe)\n"
+                "with CPU_ONLY undefined.\n");
         printf("Solver uses CPU.\n");
     }
 
@@ -117,17 +125,17 @@ void CLnets<Dtype>::trainNet(caffe::SolverParameter *param,
 template <typename Dtype>
 bool CLnets<Dtype>::exportNet(char* path)
 {
-    std::ofstream fCaffeModel(path, std::ios::binary);     
+    std::ofstream fCaffeModel(path, std::ios::binary);
     if(fCaffeModel.fail()){
         printf("ERR in %s: Could not open/write "
                 "to a file: %s\n", __FUNCTION__, path);
         return false;
-    }    
-    
+    }
+
     caffe::NetParameter netPar;
-    this->net->ToProto(&netPar, false);    
+    this->net->ToProto(&netPar, false);
     netPar.SerializeToOstream(&fCaffeModel);
-    
+
     fCaffeModel.close();
     return true;
 }
@@ -145,7 +153,7 @@ void CLnets<Dtype>::printNetInfo()
 {
     long unsigned int i;
     const std::vector<std::string>& names = net->blob_names();
-    
+
     long unsigned int bi;
     long unsigned int li;
     int parIdx = 0;
@@ -155,50 +163,88 @@ void CLnets<Dtype>::printNetInfo()
     std::vector<caffe::Blob<Dtype>*> laTopVecs, laBotVecs;
     long unsigned int layerNum = net->layers().size();
 
-    printf("Each layer has bottom blobs as input and top blobs as output. Some\n"
-            "layers have learneable parameter - weights etc.\n"
-            "Names (%lu): ", names.size());
+    bool isNamePrinted, isTypePrinted;
+
+    printf("Blobs's names (%lu): ", names.size());
     for (i = 0; i < names.size(); i++)
-        printf("%s%s", names[i].c_str(), (i < names.size() - 1) ? " " : "\n");
-    
-    printf("\n");    
-    
-    for (li = 0; li < layerNum; li++) {        
+        printf("%s%s", names[i].c_str(), (i < names.size() - 1) ? ", " : "\n");
+
+    printf("This table shows layers listed by index. Each layer has a number of"
+        " parameter, top and botom blobs:\n"
+        " Idx.: #par, #bot -> #top.\n");
+    printf("Each blob has index: par[Idx, ..] and dimensions:\n"
+        " ( num, chan, height, width)\n\n");
+
+    for (li = 0; li < layerNum; li++) {
+        isNamePrinted = false;
+        isTypePrinted = false;
 
         name = net->layer_names()[li];
         layer = net->layer_by_name(name).get();
         laTopVecs = net->top_vecs()[li];
         laBotVecs = net->bottom_vecs()[li];
-        /* print layer info*/
-        printf("%2lu: %8s, %14s, par.: %2lu, top: %2lu, bot.: %2lu\n",
-                li, name.c_str(), layer->type_name().c_str(),
-                layer->blobs().size(), laTopVecs.size(), laBotVecs.size());
-        /*  and its parameter blobs */
+
+        /* layer index, blob counts*/
+        printf("%2lu.:%2lu,%2lu ->%2lu\n",
+                li, layer->blobs().size(), laBotVecs.size(), laTopVecs.size());
+
+        /*  parameter blobs */
         for (bi = 0; bi < layer->blobs().size(); bi++) {
             bl = layer->blobs()[bi].get();
-            printf("%12s par[%lu (%2d)]: (%4d, %4d, %4d, %4d)\n", "",
+            printf("%3s| par[%lu (%2d)]: (%4d, %4d, %4d, %4d) |", "",
                     bi, parIdx++,
                     bl->num(), bl->channels(), bl->height(), bl->width());
+            if (bi == 0) {
+                printf(" %s\n", name.c_str());
+                isNamePrinted = true;
+            } else if(bi == 1) {
+                printf(" %s\n", layer->type());
+                isTypePrinted = true;
+            } else
+                printf("\n");
         }
 
-        /*  and its bottom blobs */
+        /*  bottom blobs */
         for (bi = 0; bi < laBotVecs.size(); bi++) {
             bl = laBotVecs[bi];
-            printf("%12s bot[%lu,  %2lu]: (%4d, %4d, %4d, %4d)\n", "", bi,
+            printf("%3s| bot[%lu,  %2lu]: (%4d, %4d, %4d, %4d) |", "", bi,
                     li, bl->num(), bl->channels(), bl->height(), bl->width());
+            if (!isNamePrinted && bi == 0) {
+                printf(" %s\n", name.c_str());
+                isNamePrinted = true;
+            }
+            else if(!isTypePrinted) {
+                printf(" %s\n", layer->type());
+                isTypePrinted = true;
+            } else
+                printf("\n");
         }
-        /*  and its top blobs */
+        /*  top blobs */
         for (bi = 0; bi < laTopVecs.size(); bi++) {
             bl = laTopVecs[bi];
-            printf("%12s top[%lu,  %2lu]: (%4d, %4d, %4d, %4d)\n", "", bi,
+            printf("%3s| top[%lu,  %2lu]: (%4d, %4d, %4d, %4d) |", "", bi,
                     li, bl->num(), bl->channels(), bl->height(), bl->width());
+            if (!isTypePrinted && bi == 0) {
+                printf(" %s\n", layer->type());
+                isTypePrinted = true;
+            }
+            else
+                printf("\n");
         }
-    }    
-    
+
+        /* In case of some exotic layer w/ enough blobs (lines in table). */
+        if(!isNamePrinted || !isTypePrinted)
+            printf("   %s, %s\n",
+                !isNamePrinted ? name.c_str() : "",
+                !isTypePrinted ? layer->type() : "");
+
+        printf("   +---------------------------------------+\n");
+    }
+
     printf("\ninput blobs info:\n  vector len: %lu\n", net->input_blobs().size());
     for (bi = 0; bi < net->input_blobs().size(); bi++) {
         bl = net->input_blobs()[bi];
-            printf("%6s input[%lu]: (%4d, %4d, %4d, %4d)\n", "", bi,
+            printf("%7s input[%lu]: (%4d, %4d, %4d, %4d)\n", "", bi,
                     bl->num(), bl->channels(), bl->height(), bl->width());
     }
 
@@ -209,15 +255,15 @@ int CLnets<Dtype>::getLayerIdx(char* name)
 {
     long unsigned int li;
     long unsigned int layerNum = net->layers().size();
-    std::string otherName;   
-    
+    std::string otherName;
+
     for (li = 0; li < layerNum; li++) {
         otherName = net->layer_names()[li];
-        
+
         if(strcmp(name, otherName.c_str()) == 0)
             return li;
     }
-    
+
     printf("ERR in %s: Wrong layer name\n", __FUNCTION__);
     return -1;
 }
@@ -227,97 +273,97 @@ bool CLnets<Dtype>::getLayBlobSize(int** dims, int* dimSize,
         std::vector<caffe::Blob<Dtype>*> blobs)
 {
     unsigned int i, di;
-    
+
     *dimSize = blobs.size() * 4;
     if(*dimSize == 0){
         return true;
     }
-    
+
     *dims = NULL;
     *dims = (int*) malloc(sizeof(int) * *dimSize);
-    
+
     if(!*dims){
         printf("ERR in %s: Allocation failed\n", __FUNCTION__);
         return false;
     }
-    
+
     di = 0;
     for(i = 0; i < blobs.size(); i++){
         (*dims)[di++] = blobs[i]->num();
         (*dims)[di++] = blobs[i]->channels();
         (*dims)[di++] = blobs[i]->height();
-        (*dims)[di++] = blobs[i]->width();                
-    }        
-    
+        (*dims)[di++] = blobs[i]->width();
+    }
+
     return true;
-}  
+}
 
 template <typename Dtype>
 bool CLnets<Dtype>::getTopBlobSize(int** dims, int* dimSize, unsigned int layerIdx)
-{   
+{
     if(layerIdx >= net->layers().size()){
         printf("ERR in %s: Wrong layer index\n", __FUNCTION__);
         return false;
     }
-    
+
     return getLayBlobSize(dims, dimSize, net->top_vecs()[layerIdx]);
 }
 
 template <typename Dtype>
 bool CLnets<Dtype>::getBottomBlobSize(int** dims, int* dimSize, unsigned int layerIdx)
-{  
+{
     if(layerIdx >= net->layers().size()){
         printf("ERR in %s: Wrong layer index\n", __FUNCTION__);
         return false;
     }
-    
+
     return getLayBlobSize(dims, dimSize, net->bottom_vecs()[layerIdx]);
 }
 
 template <typename Dtype>
 bool CLnets<Dtype>::getParamBlobSize(int** dims, int* dimSize, unsigned int layerIdx)
-{    
+{
     unsigned int i, di;
     std::vector<caffe::shared_ptr<caffe::Blob<Dtype> > > parBl;
     if(layerIdx >= net->layers().size()){
         printf("ERR in %s: Wrong layer index\n", __FUNCTION__);
         return false;
     }
-    
+
     parBl = net->layers()[layerIdx].get()->blobs();
-    
-    *dimSize = parBl.size() * 4;    
+
+    *dimSize = parBl.size() * 4;
     if(*dimSize == 0)
         return true;
-    
+
     *dims = NULL;
     *dims = (int*) malloc(sizeof(int) * *dimSize);
-    
+
     if(!*dims){
         printf("ERR in %s: Allocation failed\n", __FUNCTION__);
         return false;
     }
-    
+
     di = 0;
     for(i = 0; i < parBl.size(); i++){
         (*dims)[di++] = parBl[i].get()->num();
         (*dims)[di++] = parBl[i].get()->channels();
         (*dims)[di++] = parBl[i].get()->height();
-        (*dims)[di++] = parBl[i].get()->width();                
-    }        
+        (*dims)[di++] = parBl[i].get()->width();
+    }
 
     return true;
 }
 
 template <typename Dtype>
 bool CLnets<Dtype>::getInputSize(int** dims, int* dimSize)
-{   
+{
     if(net->input_blobs().size() < 1){
         printf("ERR in %s: net has no input blobs and probaly uses data layer\n",
                 __FUNCTION__);
         return false;
     }
-    
+
     return getLayBlobSize(dims, dimSize, net->input_blobs());
 }
 
@@ -334,7 +380,7 @@ bool CLnets<Dtype>::getTopBlob(Dtype** data, unsigned int layerIdx, unsigned int
         printf("ERR in %s: Wrong blob index\n", __FUNCTION__);
         return false;
     }
-    
+
     *data = (Dtype*) net->top_vecs()[layerIdx][blobIdx]->cpu_data();
     return true;
 }
@@ -352,7 +398,7 @@ bool CLnets<Dtype>::getBottomBlob(Dtype** data, unsigned int layerIdx, unsigned 
         printf("ERR in %s: Wrong blob index\n", __FUNCTION__);
         return false;
     }
-    
+
     *data = (Dtype*) net->bottom_vecs()[layerIdx][blobIdx]->cpu_data();
     return true;
 }
@@ -370,7 +416,7 @@ bool CLnets<Dtype>::getParamBlob(Dtype** data, unsigned int layerIdx, unsigned i
         printf("ERR in %s: Wrong blob index\n", __FUNCTION__);
         return false;
     }
-    
+
     *data = (Dtype*) net->layers()[layerIdx].get()->blobs()[blobIdx].get()->cpu_data();
     return true;
 }
@@ -388,7 +434,7 @@ bool CLnets<Dtype>::setTopBlob(Dtype** data, unsigned int layerIdx, unsigned int
        printf("ERR in %s: Wrong blob index\n", __FUNCTION__);
         return false;
     }
-    
+
     net->top_vecs()[layerIdx][blobIdx]->set_cpu_data(*data);
     return true;
 }
@@ -406,7 +452,7 @@ bool CLnets<Dtype>::setBottomBlob(Dtype** data, unsigned int layerIdx, unsigned 
         printf("ERR in %s: Wrong blob index\n", __FUNCTION__);
         return false;
     }
-    
+
     net->bottom_vecs()[layerIdx][blobIdx]->set_cpu_data(*data);
     return true;
 }
@@ -424,20 +470,20 @@ bool CLnets<Dtype>::setParamBlob(Dtype** data, unsigned int layerIdx, unsigned i
         printf("ERR in %s: Wrong blob index\n", __FUNCTION__);
         return false;
     }
-    
+
     net->layers()[layerIdx].get()->blobs()[blobIdx].get()->set_cpu_data(*data);
     return true;
 }
 
 template <typename Dtype>
 bool CLnets<Dtype>::setInput(Dtype **inputData)
-{    
+{
     if(net->input_blobs().size() < 1){
         printf("ERR in %s: net has no input blobs and probaly uses data layer\n",
                 __FUNCTION__);
         return false;
     }
-    
+
     net->input_blobs()[0]->set_cpu_data(*inputData);
     return true;
 }
